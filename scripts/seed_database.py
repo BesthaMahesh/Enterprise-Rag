@@ -14,6 +14,12 @@ def seed_demo_users():
     init_db()
     db = SessionLocal()
 
+    existing_count = db.query(User).count()
+    if existing_count >= 5:
+        # Demo users already present, skip re-hashing to ensure instant startup
+        db.close()
+        return
+
     demo_users = [
         {
             "email": "employee@acme.local",

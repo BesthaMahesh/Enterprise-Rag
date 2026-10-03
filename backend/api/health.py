@@ -10,7 +10,7 @@ router = APIRouter(tags=["Health & Status"])
 
 @router.get("/health")
 @router.get("/api/health")
-def health_check(db: Session = Depends(get_db)):
+def health_check():
     """Basic health check indicating process is alive and responding."""
     return {
         "status": "online",

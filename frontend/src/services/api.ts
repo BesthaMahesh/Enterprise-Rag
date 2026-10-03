@@ -19,6 +19,19 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit, retries = 2): Promise<Response> {
+  try {
+    return await window.fetch(input, init);
+  } catch (err: any) {
+    if (retries > 0) {
+      await new Promise((r) => setTimeout(r, 2000));
+      return fetchWithRetry(input, init, retries - 1);
+    }
+    throw new Error('Backend server is connecting or waking up from idle. Please click "Try again".');
+  }
+}
+const fetch = fetchWithRetry;
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let errorDetail = 'Something went wrong while processing your request.';
