@@ -54,8 +54,12 @@ class DenseRetriever:
             return []
 
         # Generate query vector
-        query_vec = EmbeddingGenerator.generate_query_embedding(query)
-        query_vec = np.expand_dims(query_vec, axis=0).astype(np.float32)
+        try:
+            query_vec = EmbeddingGenerator.generate_query_embedding(query)
+            query_vec = np.expand_dims(query_vec, axis=0).astype(np.float32)
+        except Exception as e:
+            logger.warning(f"Dense query embedding generation failed ({e}). Falling back to sparse retrieval.")
+            return []
 
         # Retrieve a broader candidate set to ensure sufficient candidates after ACL pruning
         fetch_k = min(self.index.ntotal, max(top_k * 4, 50))

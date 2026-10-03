@@ -30,6 +30,17 @@ class HybridRetriever:
         k_rerank = top_k_rerank or settings.TOP_K_RERANK
         k_final = final_k or settings.FINAL_CONTEXT_K
 
+        # Low memory mode bypasses PyTorch to guarantee operation under 100MB RAM
+        if getattr(settings, "LOW_MEMORY_MODE", False):
+            sparse_results = self.sparse.search(query, user_role=user_role, top_k=k_final)
+            return {
+                "dense_results": [],
+                "sparse_results": sparse_results,
+                "fused_results": sparse_results,
+                "reranked_results": sparse_results,
+                "final_candidates": sparse_results
+            }
+
         # Step 1: Run Dense Retrieval (ACL filtered)
         dense_results = self.dense.search(query, user_role=user_role, top_k=k_dense)
 

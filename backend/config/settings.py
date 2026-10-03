@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     ENABLE_CROSS_ENCODER: bool = True
+    LOW_MEMORY_MODE: bool = False
     EMBEDDING_DEVICE: str = "cpu"
     RERANKER_DEVICE: str = "cpu"
 

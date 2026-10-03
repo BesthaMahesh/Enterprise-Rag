@@ -36,15 +36,16 @@ async def lifespan(app: FastAPI):
 
     # Pre-warm embedding model in background thread so server starts in milliseconds
     # and user queries run instantly without 30s cold-start model load delay
-    import threading
-    def _warmup():
-        try:
-            from backend.embeddings.model import get_embedding_model
-            get_embedding_model()
-        except Exception:
-            pass
+    if not getattr(settings, "LOW_MEMORY_MODE", False):
+        import threading
+        def _warmup():
+            try:
+                from backend.embeddings.model import get_embedding_model
+                get_embedding_model()
+            except Exception:
+                pass
 
-    threading.Thread(target=_warmup, daemon=True, name="model-warmup").start()
+        threading.Thread(target=_warmup, daemon=True, name="model-warmup").start()
 
     yield
 
