@@ -4,7 +4,7 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt && python -c \"from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')\" && python scripts/seed_database.py"
+    buildCommand: "pip install -r requirements.txt && export HF_HOME=/opt/render/project/src/.cache/huggingface && python -c \"from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')\" && python scripts/seed_database.py"
     startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT --workers 1"
     healthCheckPath: /api/health
     autoDeploy: true
@@ -17,6 +17,8 @@ services:
         value: "false"
       - key: LOG_LEVEL
         value: INFO
+      - key: HF_HOME
+        value: /opt/render/project/src/.cache/huggingface
       - key: DATABASE_URL
         value: sqlite:///./enterprise_rag.db
       - key: JWT_SECRET
