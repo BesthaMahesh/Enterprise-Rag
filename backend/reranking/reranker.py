@@ -18,11 +18,18 @@ class Reranker:
 
         reranker_model = get_cross_encoder()
         if reranker_model is not None:
-            pairs = [[query, c["content"]] for c in candidates]
+            # Evaluate only top candidates through CrossEncoder to avoid memory spikes
+            max_eval = min(len(candidates), max(top_k, 10))
+            eval_candidates = candidates[:max_eval]
+            pairs = [[query, c["content"]] for c in eval_candidates]
             try:
-                scores = reranker_model.predict(pairs, show_progress_bar=False)
+                import torch
+                with torch.no_grad():
+                    scores = reranker_model.predict(pairs, batch_size=2, show_progress_bar=False)
                 for idx, score in enumerate(scores):
-                    candidates[idx]["reranker_score"] = float(score)
+                    eval_candidates[idx]["reranker_score"] = float(score)
+                for c in candidates[max_eval:]:
+                    c["reranker_score"] = c.get("rrf_score", 0.0)
             except Exception as e:
                 logger.error(f"Error running cross-encoder: {e}")
                 for c in candidates:

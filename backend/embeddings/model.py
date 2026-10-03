@@ -13,6 +13,12 @@ def get_embedding_model():
     global _model_instance
     if _model_instance is None:
         try:
+            import torch
+            try:
+                torch.set_num_threads(1)
+                torch.set_num_interop_threads(1)
+            except Exception:
+                pass
             from sentence_transformers import SentenceTransformer
             logger.info(f"Loading embedding model: {settings.EMBEDDING_MODEL} on {settings.EMBEDDING_DEVICE}")
             _model_instance = SentenceTransformer(settings.EMBEDDING_MODEL, device=settings.EMBEDDING_DEVICE)

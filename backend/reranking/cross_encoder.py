@@ -10,8 +10,17 @@ _reranker_instance = None
 def get_cross_encoder():
     """Singleton getter for CrossEncoder reranker model."""
     global _reranker_instance
+    if not getattr(settings, "ENABLE_CROSS_ENCODER", True):
+        return None
+
     if _reranker_instance is None:
         try:
+            import torch
+            try:
+                torch.set_num_threads(1)
+                torch.set_num_interop_threads(1)
+            except Exception:
+                pass
             from sentence_transformers import CrossEncoder
             logger.info(f"Loading CrossEncoder reranker: {settings.RERANKER_MODEL} on {settings.RERANKER_DEVICE}")
             _reranker_instance = CrossEncoder(settings.RERANKER_MODEL, device=settings.RERANKER_DEVICE)
