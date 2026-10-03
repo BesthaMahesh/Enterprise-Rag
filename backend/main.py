@@ -28,6 +28,11 @@ setup_structured_logging(settings.LOG_LEVEL)
 async def lifespan(app: FastAPI):
     # Initialize DB tables
     init_db()
+    try:
+        from scripts.seed_database import seed_demo_users
+        seed_demo_users()
+    except Exception:
+        pass
     yield
 
 
@@ -38,14 +43,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS Middleware with Vercel & custom domain support
+cors_kwargs = {
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if "*" in settings.CORS_ORIGINS:
+    cors_kwargs["allow_origins"] = ["*"]
+    cors_kwargs["allow_credentials"] = False
+else:
+    cors_kwargs["allow_origins"] = list(settings.CORS_ORIGINS)
+    cors_kwargs["allow_credentials"] = True
+    if getattr(settings, "CORS_ORIGIN_REGEX", None):
+        cors_kwargs["allow_origin_regex"] = settings.CORS_ORIGIN_REGEX
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 
 @app.middleware("http")

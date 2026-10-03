@@ -9,7 +9,10 @@ import {
   ChatMessage
 } from '../types';
 
-const API_BASE = '/api';
+const envApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim().replace(/\/+$/, '') || '';
+const API_BASE = envApiUrl
+  ? (envApiUrl.endsWith('/api') ? envApiUrl : `${envApiUrl}/api`)
+  : '/api';
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('token');
