@@ -31,6 +31,11 @@ Where this section contains sensitive business information, access is restricted
 ### Example
 A user with an allowed role may retrieve the relevant information and receive a grounded answer. A user without an allowed role must not receive the protected document content even if the user explicitly requests it.
 
+## Hybrid work schedule
+Eligible employees may work remotely for up to **three days per week** under the hybrid work policy. They must work on-site for at least **two days per week** unless their manager has approved a documented exception.
+
+Each team sets its required in-office days based on operational needs, collaboration requirements, and customer commitments. Employees must keep their agreed schedule current and remain available during their normal working hours on both remote and on-site days.
+
 ## Approval
 This section describes the approved enterprise process for approval. Employees and authorized users should use the designated system of record, provide accurate information, follow approval requirements, and retain relevant evidence.
 
