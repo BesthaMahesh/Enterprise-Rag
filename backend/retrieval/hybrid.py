@@ -33,6 +33,11 @@ class HybridRetriever:
         # Low memory mode bypasses PyTorch to guarantee operation under 100MB RAM
         if getattr(settings, "LOW_MEMORY_MODE", False):
             sparse_results = self.sparse.search(query, user_role=user_role, top_k=k_final)
+            # The normal path attaches this score during cross-encoder reranking.
+            # In low-memory mode BM25 is the ranking authority, so expose its score
+            # in the same field used by relevance validation and citations.
+            for candidate in sparse_results:
+                candidate["reranker_score"] = candidate.get("sparse_score", 0.0)
             return {
                 "dense_results": [],
                 "sparse_results": sparse_results,

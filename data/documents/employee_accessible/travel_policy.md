@@ -103,41 +103,12 @@ Where this section contains sensitive business information, access is restricted
 ### Example
 A user with an allowed role may retrieve the relevant information and receive a grounded answer. A user without an allowed role must not receive the protected document content even if the user explicitly requests it.
 
-## Receipts
-This section describes the approved enterprise process for receipts. Employees and authorized users should use the designated system of record, provide accurate information, follow approval requirements, and retain relevant evidence.
+## Receipts and expense submission
+Employees must submit business travel expenses within **30 calendar days** after the final day of the company trip. The expense report must include itemized receipts and other supporting documents required by the expense system.
 
-The owning function is responsible for maintaining the process, reviewing material changes, and handling exceptions. Managers should verify requests against role, business need, authorization, and applicable controls. Users must not bypass approval, security, privacy, or audit requirements.
+Submit the report through the designated expense system. The employee must identify the business purpose, enter each expense accurately, and retain the original receipts until the report has been approved. Managers review submissions for policy compliance and may request clarification or additional evidence.
 
-Where this section contains sensitive business information, access is restricted according to the document ACL. Unauthorized users should receive a controlled response rather than the protected content.
-
-### Operational Guidance
-1. Identify the request and required information.
-2. Verify the user's role and authorization.
-3. Retrieve only information permitted by the ACL.
-4. Validate the result against the current version.
-5. Record material decisions and evidence.
-6. Escalate exceptions or uncertainty to the owning function.
-
-### Example
-A user with an allowed role may retrieve the relevant information and receive a grounded answer. A user without an allowed role must not receive the protected document content even if the user explicitly requests it.
-
-## Expense submission
-This section describes the approved enterprise process for expense submission. Employees and authorized users should use the designated system of record, provide accurate information, follow approval requirements, and retain relevant evidence.
-
-The owning function is responsible for maintaining the process, reviewing material changes, and handling exceptions. Managers should verify requests against role, business need, authorization, and applicable controls. Users must not bypass approval, security, privacy, or audit requirements.
-
-Where this section contains sensitive business information, access is restricted according to the document ACL. Unauthorized users should receive a controlled response rather than the protected content.
-
-### Operational Guidance
-1. Identify the request and required information.
-2. Verify the user's role and authorization.
-3. Retrieve only information permitted by the ACL.
-4. Validate the result against the current version.
-5. Record material decisions and evidence.
-6. Escalate exceptions or uncertainty to the owning function.
-
-### Example
-A user with an allowed role may retrieve the relevant information and receive a grounded answer. A user without an allowed role must not receive the protected document content even if the user explicitly requests it.
+Expenses submitted after the 30-day deadline require a documented exception approved by the employee's manager and the Finance team before reimbursement can be processed.
 
 ## International travel
 This section describes the approved enterprise process for international travel. Employees and authorized users should use the designated system of record, provide accurate information, follow approval requirements, and retain relevant evidence.
