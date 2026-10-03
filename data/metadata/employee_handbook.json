@@ -1,0 +1,17 @@
+{
+  "document_id": "documents_employee_accessible_employee_handbook",
+  "document": "Employee Handbook",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "INTERNAL",
+  "allowed_roles": [
+    "EMPLOYEE",
+    "HR",
+    "FINANCE",
+    "ADMIN"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

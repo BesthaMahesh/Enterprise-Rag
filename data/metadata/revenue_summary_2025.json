@@ -1,0 +1,16 @@
+{
+  "document_id": "documents_finance_private_revenue_summary_2025",
+  "document": "Revenue Summary 2025",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "RESTRICTED",
+  "allowed_roles": [
+    "FINANCE",
+    "HR",
+    "ADMIN"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

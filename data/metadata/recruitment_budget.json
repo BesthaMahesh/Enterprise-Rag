@@ -1,0 +1,15 @@
+{
+  "document_id": "documents_hr_private_recruitment_budget",
+  "document": "Recruitment Budget",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "CONFIDENTIAL",
+  "allowed_roles": [
+    "HR",
+    "ADMIN"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

@@ -1,0 +1,15 @@
+{
+  "document_id": "documents_admin_restricted_security_incident_summary",
+  "document": "Security Incident Summary",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "HIGHLY_RESTRICTED",
+  "allowed_roles": [
+    "ADMIN",
+    "SECURITY"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

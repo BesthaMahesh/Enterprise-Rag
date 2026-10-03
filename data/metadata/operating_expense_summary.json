@@ -1,0 +1,16 @@
+{
+  "document_id": "documents_finance_private_operating_expense_summary",
+  "document": "Operating Expense Summary",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "RESTRICTED",
+  "allowed_roles": [
+    "FINANCE",
+    "HR",
+    "ADMIN"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

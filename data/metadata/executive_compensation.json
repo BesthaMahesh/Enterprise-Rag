@@ -1,0 +1,14 @@
+{
+  "document_id": "documents_admin_restricted_executive_compensation",
+  "document": "Executive Compensation Summary",
+  "organization": "Acme Technologies",
+  "domain": "HR/Enterprise",
+  "classification": "HIGHLY_RESTRICTED",
+  "allowed_roles": [
+    "ADMIN"
+  ],
+  "version": "1.0",
+  "effective_date": "2026-01-01",
+  "status": "active",
+  "language": "en"
+}

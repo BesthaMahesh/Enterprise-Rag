@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: enterprise_rag_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: enterprise_rag
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d enterprise_rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: enterprise_rag_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/enterprise_rag
+      JWT_SECRET: super-secret-enterprise-rag-jwt-token-key-2026-acme-corp
+      LLM_PROVIDER: groq
+      LLM_MODEL: openai/gpt-oss-120b
+      LLM_API_KEY: ${LLM_API_KEY}
+      EMBEDDING_MODEL: all-MiniLM-L6-v2
+      RERANKER_MODEL: cross-encoder/ms-marco-MiniLM-L-6-v2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./indexes:/app/indexes
+      - ./data:/app/data
+
+volumes:
+  pgdata:

@@ -1,0 +1,28 @@
+{
+  "roles": {
+    "EMPLOYEE": [
+      "INTERNAL"
+    ],
+    "HR": [
+      "INTERNAL",
+      "CONFIDENTIAL",
+      "RESTRICTED"
+    ],
+    "FINANCE": [
+      "INTERNAL",
+      "CONFIDENTIAL",
+      "RESTRICTED"
+    ],
+    "ADMIN": [
+      "INTERNAL",
+      "CONFIDENTIAL",
+      "RESTRICTED",
+      "HIGHLY_RESTRICTED"
+    ],
+    "SECURITY": [
+      "INTERNAL",
+      "HIGHLY_RESTRICTED"
+    ]
+  },
+  "rule": "Filter documents by authenticated role and document allowed_roles before retrieval/context construction."
+}
