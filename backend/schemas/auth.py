@@ -23,14 +23,6 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=1)
 
 
-class UserRegister(BaseModel):
-    full_name: str = Field(..., min_length=2)
-    email: str = Field(..., min_length=3)
-    password: str = Field(..., min_length=8)
-    department: Optional[str] = "General"
-    role: Optional[str] = None
-
-
 class UserCreate(BaseModel):
     email: str
     password: str

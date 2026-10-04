@@ -79,22 +79,6 @@ export const api = {
     }>(res);
   },
 
-  async register(data: { full_name: string; email: string; password: string; department?: string }) {
-    const res = await fetch(`${API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return handleResponse<{
-      access_token: string;
-      token_type: string;
-      role: string;
-      email: string;
-      full_name: string;
-      department: string;
-    }>(res);
-  },
-
   async forgotPassword(email: string) {
     const res = await fetch(`${API_BASE}/auth/forgot-password`, {
       method: 'POST',

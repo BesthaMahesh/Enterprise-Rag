@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.database.session import get_db
-from backend.database.models import User, UserRole
+from backend.database.models import User
 from backend.auth.password import verify_password, get_password_hash
 from backend.auth.jwt import (
     create_access_token,
@@ -14,7 +14,6 @@ from backend.auth.jwt import (
 from backend.auth.dependencies import get_current_user
 from backend.schemas.auth import (
     UserLogin,
-    UserRegister,
     Token,
     UserResponse,
     ForgotPasswordRequest,
@@ -53,103 +52,6 @@ def validate_password_complexity(password: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password must contain at least one special character."
         )
-
-
-def validate_email_format(email: str) -> str:
-    """Sanitize and validate email format."""
-    cleaned = email.strip().lower()
-    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w{2,}$"
-    if not re.match(email_pattern, cleaned):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please provide a valid work email address."
-        )
-    return cleaned
-
-
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register(reg_data: UserRegister, db: Session = Depends(get_db)):
-    clean_email = validate_email_format(reg_data.email)
-    validate_password_complexity(reg_data.password)
-
-    # Duplicate check
-    existing = db.query(User).filter(User.email == clean_email).first()
-    if existing:
-        AuditLogger.log_event(
-            db=db,
-            user_email=clean_email,
-            role="UNKNOWN",
-            action="REGISTRATION_FAILED",
-            acl_decision="DENIED",
-            reason="Duplicate email registration attempt",
-            status_code=409
-        )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An account with this email already exists."
-        )
-
-    # Server-side role assignment: ALWAYS EMPLOYEE for public registrations
-    clean_name = reg_data.full_name.strip()
-    if len(clean_name) < 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Full name is required."
-        )
-
-    dept_clean = reg_data.department.strip() if reg_data.department else "General"
-    dept_lower = dept_clean.lower()
-
-    # Determine assigned role (honoring role param if valid, or inferring from department)
-    valid_roles = {r.value for r in UserRole}
-    if reg_data.role and reg_data.role.upper() in valid_roles:
-        assigned_role = reg_data.role.upper()
-    elif dept_lower in ["hr", "human resources", "people", "talent", "recruiting"]:
-        assigned_role = UserRole.HR.value
-    elif dept_lower in ["finance", "accounting", "payroll"]:
-        assigned_role = UserRole.FINANCE.value
-    elif dept_lower in ["security", "infosec", "cybersecurity"]:
-        assigned_role = UserRole.SECURITY.value
-    else:
-        assigned_role = UserRole.EMPLOYEE.value
-
-    new_user = User(
-        email=clean_email,
-        hashed_password=get_password_hash(reg_data.password),
-        full_name=clean_name,
-        role=assigned_role,
-        department=dept_clean,
-        is_active=True,
-        created_at=datetime.now(timezone.utc)
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    # Audit registration
-    AuditLogger.log_event(
-        db=db,
-        user_email=new_user.email,
-        role=new_user.role,
-        action="REGISTRATION_SUCCESS",
-        acl_decision="ALLOWED",
-        reason=f"User successfully registered with {new_user.role} role"
-    )
-
-    # Auto-login after registration
-    access_token = create_access_token(
-        data={"sub": new_user.email, "role": new_user.role, "id": new_user.id}
-    )
-
-    return Token(
-        access_token=access_token,
-        token_type="bearer",
-        role=new_user.role,
-        email=new_user.email,
-        full_name=new_user.full_name,
-        department=new_user.department
-    )
 
 
 @router.post("/login", response_model=Token)

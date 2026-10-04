@@ -186,19 +186,6 @@ export const LoginPage: React.FC = () => {
                 </button>
               </form>
 
-              {/* Registration Link */}
-              <div className="mt-6 pt-5 border-t border-slate-800 text-center">
-                <p className="text-xs text-slate-400">
-                  Don't have an account?{' '}
-                  <Link
-                    to="/register"
-                    className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
-                  >
-                    Create an account
-                  </Link>
-                </p>
-              </div>
-
               {/* Security Badge */}
               <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />

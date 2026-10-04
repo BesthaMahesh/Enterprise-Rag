@@ -4,7 +4,6 @@ import { api } from '../services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { full_name: string; email: string; password: string; department?: string }) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
 }
@@ -71,29 +70,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (data: { full_name: string; email: string; password: string; department?: string }) => {
-    setIsLoading(true);
-    try {
-      const res = await api.register(data);
-      localStorage.setItem('token', res.access_token);
-      setToken(res.access_token);
-
-      const userData: User = {
-        id: 0,
-        email: res.email,
-        full_name: res.full_name,
-        role: res.role as UserRole,
-        department: res.department,
-        is_active: true,
-        created_at: new Date().toISOString(),
-      };
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       await api.logout();
@@ -123,7 +99,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!token && !!user,
         isLoading,
         login,
-        register,
         logout,
         hasRole,
       }}

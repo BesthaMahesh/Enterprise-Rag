@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { LoginPage } from '../pages/LoginPage';
-import { RegisterPage } from '../pages/RegisterPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { AssistantPage } from '../pages/AssistantPage';
@@ -48,10 +47,6 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/login"
         element={isAuthenticated && !isLoading ? <Navigate to="/assistant" replace /> : <LoginPage />}
-      />
-      <Route
-        path="/register"
-        element={isAuthenticated && !isLoading ? <Navigate to="/assistant" replace /> : <RegisterPage />}
       />
       <Route
         path="/forgot-password"

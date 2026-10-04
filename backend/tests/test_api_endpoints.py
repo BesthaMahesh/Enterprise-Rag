@@ -86,83 +86,10 @@ def test_chat_authorized_employee():
     assert "conversation_id" in data
 
 
-def test_auth_registration_and_lifecycle():
-    import uuid
-    new_email = f"newhire.{uuid.uuid4().hex[:8]}@acme.local"
-    initial_password = "SecurePassword2026!"
-
-    # 1. Register with weak password -> 422
-    weak_res = client.post("/api/auth/register", json={
-        "email": new_email,
+def test_public_registration_is_unavailable():
+    response = client.post("/api/auth/register", json={
+        "email": "newhire@acme.local",
         "full_name": "Alex Smith",
-        "password": "weak",
-        "department": "Engineering"
+        "password": "SecurePassword2026!"
     })
-    assert weak_res.status_code == 422
-
-    # 2. Register valid user -> 201 & role strictly EMPLOYEE
-    reg_res = client.post("/api/auth/register", json={
-        "email": new_email,
-        "full_name": "Alex Smith",
-        "password": initial_password,
-        "department": "Engineering"
-    })
-    assert reg_res.status_code == 201
-    reg_data = reg_res.json()
-    assert reg_data["role"] == "EMPLOYEE"
-    assert "access_token" in reg_data
-
-    # 3. Duplicate registration -> 409 Conflict (or 400)
-    dup_res = client.post("/api/auth/register", json={
-        "email": new_email,
-        "full_name": "Alex Smith Duplicate",
-        "password": initial_password,
-        "department": "Engineering"
-    })
-    assert dup_res.status_code in [400, 409]
-
-    # 4. Verify /api/auth/me returns the server-side role
-    token = reg_data["access_token"]
-    me_res = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
-    assert me_res.status_code == 200
-    me_data = me_res.json()
-    assert me_data["email"] == new_email
-    assert me_data["role"] == "EMPLOYEE"
-
-    # 5. Forgot password flow
-    forgot_res = client.post("/api/auth/forgot-password", json={"email": new_email})
-    assert forgot_res.status_code == 200
-    forgot_data = forgot_res.json()
-    reset_token = forgot_data.get("reset_token")
-    assert reset_token is not None
-
-    # 6. Reset password using token
-    new_password = "UpdatedPassword2026!"
-    reset_res = client.post("/api/auth/reset-password", json={
-        "token": reset_token,
-        "new_password": new_password
-    })
-    assert reset_res.status_code == 200
-
-    # 7. Old password fails
-    old_login_res = client.post("/api/auth/login", json={
-        "email": new_email,
-        "password": initial_password
-    })
-    assert old_login_res.status_code == 401
-
-    # 8. New password succeeds
-    new_login_res = client.post("/api/auth/login", json={
-        "email": new_email,
-        "password": new_password
-    })
-    assert new_login_res.status_code == 200
-    assert new_login_res.json()["email"] == new_email
-
-    # 9. Token cannot be reused
-    reused_reset_res = client.post("/api/auth/reset-password", json={
-        "token": reset_token,
-        "new_password": "AnotherPassword2026!"
-    })
-    assert reused_reset_res.status_code == 400
-
+    assert response.status_code == 404
