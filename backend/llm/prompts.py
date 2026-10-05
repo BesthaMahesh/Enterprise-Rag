@@ -1,3 +1,9 @@
+INSUFFICIENT_KNOWLEDGE_FALLBACK = (
+    "I’m unable to verify this information from the available company documents. "
+    "You can try another question or contact HR or the Accounts team, depending on your query."
+)
+
+
 SYSTEM_PROMPT = """You are the Enterprise AI Assistant.
 Your purpose is to provide clear, synthesized, and professional answers to employee questions using strictly the verified enterprise context provided.
 
@@ -19,7 +25,7 @@ CRITICAL GUIDELINES:
 
 4. Controlled Fallbacks:
    - If the context does not contain enough authorized information to answer the question, state:
-     "I couldn't find enough information in the available knowledge to answer that accurately."
+     "I’m unable to verify this information from the available company documents. You can try another question or contact HR or the Accounts team, depending on your query."
    - If the user asks for personal salary, payroll, compensation, or personal bank details, state:
      "I don't have access to your personal payroll information through this assistant."
    - If the query requests restricted or confidential information that is not available in the context, state:
@@ -32,5 +38,4 @@ USER_PROMPT_TEMPLATE = """Authorized Enterprise Context:
 User Question: {query}
 
 Synthesize a clean, professional, and directly helpful answer to the user's question based strictly on the authorized context above. Do not repeat raw metadata, headers, or source tags."""
-
 

@@ -2,6 +2,7 @@ import abc
 import logging
 from typing import List, Dict, Any, Optional
 from backend.config.settings import settings
+from backend.llm.prompts import INSUFFICIENT_KNOWLEDGE_FALLBACK
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +68,4 @@ class MockLLMProvider(LLMProvider):
         if "Authorized Enterprise Context:" in last_msg:
             # Extract grounded response
             return "Based on the authorized enterprise policy, your request is addressed in accordance with company guidelines."
-        return "I couldn't find enough information in the available knowledge to answer that accurately."
+        return INSUFFICIENT_KNOWLEDGE_FALLBACK

@@ -13,7 +13,11 @@ from backend.retrieval.retriever import enterprise_retriever
 from backend.reranking.reranker import Reranker
 from backend.context.builder import ContextBuilder
 from backend.llm.client import llm_client
-from backend.llm.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+from backend.llm.prompts import (
+    INSUFFICIENT_KNOWLEDGE_FALLBACK,
+    SYSTEM_PROMPT,
+    USER_PROMPT_TEMPLATE,
+)
 from backend.llm.response_parser import ResponseParser
 from backend.guardrails.input_guardrail import InputGuardrail
 from backend.guardrails.output_guardrail import OutputGuardrail
@@ -196,11 +200,11 @@ class RAGEvaluator:
                         if "salary" in lower_q or "payroll" in lower_q:
                             raw_answer = "I don't have access to personal payroll information."
                         elif not is_relevant:
-                            raw_answer = "I couldn't find enough relevant information in the authorized knowledge base to answer that accurately."
+                            raw_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
                         elif role == "EMPLOYEE" and any(w in lower_q for w in ["budget", "revenue", "executive"]):
                             raw_answer = "I don't have access to that information in the authorized knowledge base."
                         else:
-                            raw_answer = "I couldn't find sufficient information in the authorized knowledge base to answer that question."
+                            raw_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
 
                 # Parse citations
                 clean_answer, parsed_citations = ResponseParser.parse_response(

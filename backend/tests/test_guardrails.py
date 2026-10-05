@@ -3,6 +3,15 @@ from backend.guardrails.prompt_injection import PromptInjectionDetector
 from backend.guardrails.pii import PIIDetector
 from backend.guardrails.grounding import GroundingValidator
 from backend.guardrails.input_guardrail import InputGuardrail
+from backend.guardrails.output_guardrail import OutputGuardrail
+from backend.llm.prompts import INSUFFICIENT_KNOWLEDGE_FALLBACK
+from backend.schemas.chat import SourceCitation
+
+
+EXPECTED_INSUFFICIENT_KNOWLEDGE_FALLBACK = (
+    "I’m unable to verify this information from the available company documents. "
+    "You can try another question or contact HR or the Accounts team, depending on your query."
+)
 
 
 def test_prompt_injection_detection():
@@ -66,3 +75,48 @@ def test_query_classification():
     assert InputGuardrail.classify_query("What is the HR budget for 2026?") == "HR"
     assert InputGuardrail.classify_query("What is the company revenue for 2025?") == "FINANCE"
     assert InputGuardrail.classify_query("What is the executive compensation governance?") == "RESTRICTED"
+
+
+def test_output_guardrail_preserves_answer_and_citation_with_relevant_context():
+    answer = "Employees receive 20 days of paid annual leave per calendar year."
+    chunk = {
+        "document_id": "leave-policy",
+        "document_title": "Leave Policy",
+        "section": "Annual Leave",
+        "classification": "INTERNAL",
+    }
+    citation = SourceCitation(
+        document_id="leave-policy",
+        document_title="Leave Policy",
+        section="Annual Leave",
+        classification="INTERNAL",
+        snippet="Employees receive 20 days of paid annual leave per calendar year.",
+        relevance_score=0.95,
+        allowed_roles=["EMPLOYEE"],
+    )
+
+    sanitized, citations, _, _ = OutputGuardrail.validate_and_sanitize_output(
+        answer=answer,
+        citations=[citation],
+        context_str=answer,
+        user_role="EMPLOYEE",
+        authorized_chunks=[chunk],
+    )
+
+    assert sanitized == answer
+    assert citations == [citation]
+
+
+def test_output_guardrail_returns_professional_fallback_without_context():
+    assert INSUFFICIENT_KNOWLEDGE_FALLBACK == EXPECTED_INSUFFICIENT_KNOWLEDGE_FALLBACK
+
+    sanitized, citations, _, _ = OutputGuardrail.validate_and_sanitize_output(
+        answer=INSUFFICIENT_KNOWLEDGE_FALLBACK,
+        citations=[],
+        context_str="",
+        user_role="EMPLOYEE",
+        authorized_chunks=[],
+    )
+
+    assert sanitized == INSUFFICIENT_KNOWLEDGE_FALLBACK
+    assert citations == []

@@ -24,7 +24,11 @@ class GroundingValidator:
         grounding_score = supported_count / len(answer_words)
 
         # Check for insufficient information standard response
-        if "couldn't find sufficient information" in answer.lower() or "don't have access" in answer.lower():
+        if (
+            "couldn't find sufficient information" in answer.lower()
+            or "unable to verify this information from the available company documents" in answer.lower()
+            or "don't have access" in answer.lower()
+        ):
             return 1.0, True
 
         is_grounded = grounding_score >= 0.55

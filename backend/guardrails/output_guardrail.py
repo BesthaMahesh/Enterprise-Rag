@@ -5,6 +5,7 @@ from backend.guardrails.citation import CitationValidator
 from backend.guardrails.pii import PIIDetector
 from backend.schemas.chat import SourceCitation
 from backend.acl.service import acl_service
+from backend.llm.prompts import INSUFFICIENT_KNOWLEDGE_FALLBACK
 
 logger = logging.getLogger(__name__)
 
@@ -44,25 +45,35 @@ class OutputGuardrail:
                 sanitized_answer = "I don't have access to your personal payroll information through this assistant."
             elif any(g in lower_ans for g in ["hello", "how can i help", "how can i assist", "cannot fulfill", "security instructions"]):
                 sanitized_answer = answer
-            elif "couldn't find" in lower_ans or "insufficient" in lower_ans:
+            elif (
+                "couldn't find" in lower_ans
+                or "insufficient" in lower_ans
+                or "unable to verify this information" in lower_ans
+            ):
                 sanitized_answer = answer
             elif user_role == "EMPLOYEE" and any(w in lower_ans for w in ["budget", "revenue", "restricted", "confidential"]):
                 sanitized_answer = "I'm sorry, I don't have access to that information."
             else:
-                sanitized_answer = answer if answer else "I couldn't find enough information in the available knowledge to answer that accurately."
+                sanitized_answer = answer if answer else INSUFFICIENT_KNOWLEDGE_FALLBACK
             sanitized_citations = []
             return sanitized_answer, sanitized_citations, 1.0, "PASSED"
 
         # 6. Fallback if hallucinated with very low score and no refusal
-        if not is_grounded and grounding_score < 0.25 and "couldn't find" not in sanitized_answer.lower():
+        if (
+            not is_grounded
+            and grounding_score < 0.25
+            and "couldn't find" not in sanitized_answer.lower()
+            and "unable to verify this information" not in sanitized_answer.lower()
+        ):
             logger.warning(f"Output failed groundedness check (score={grounding_score}). Returning controlled fallback.")
-            sanitized_answer = "I couldn't find enough information in the available knowledge to answer that accurately."
+            sanitized_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
 
         # 7. Context/Citation Consistency: If the response is an abstention or security refusal,
         # never display sources claiming the refusal is based on those documents.
         refusal_markers = [
             "couldn't find enough",
             "couldn't find sufficient",
+            "unable to verify this information from the available company documents",
             "don't have access to that information",
             "don't have access to your personal payroll",
             "cannot fulfill requests that attempt to override",

@@ -25,7 +25,11 @@ from backend.retrieval.retriever import enterprise_retriever
 from backend.reranking.reranker import Reranker
 from backend.context.builder import ContextBuilder
 from backend.llm.client import llm_client
-from backend.llm.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
+from backend.llm.prompts import (
+    INSUFFICIENT_KNOWLEDGE_FALLBACK,
+    SYSTEM_PROMPT,
+    USER_PROMPT_TEMPLATE,
+)
 from backend.llm.response_parser import ResponseParser
 from backend.observability.tracing import get_current_request_id, get_current_trace_id
 from backend.observability.cost_tracker import CostTracker
@@ -121,7 +125,7 @@ def chat_endpoint(
             logger.info(
                 f"Query relevance validation abstained: top score {top_rerank_score:.3f} < threshold {settings.RERANKER_RELEVANCE_THRESHOLD:.3f}"
             )
-            raw_llm_answer = "I couldn't find enough relevant information in the authorized knowledge base to answer that accurately."
+            raw_llm_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
         else:
             # 3. Context Construction
             context_str, authorized_context_chunks = ContextBuilder.build_context(
@@ -156,7 +160,7 @@ def chat_endpoint(
                 elif current_user.role == "EMPLOYEE" and query_class in ["FINANCE", "RESTRICTED", "HR"]:
                     raw_llm_answer = "I'm sorry, I don't have access to that information."
                 else:
-                    raw_llm_answer = "I couldn't find enough information in the available knowledge to answer that accurately."
+                    raw_llm_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
 
     # Parse Citations (Single source-of-truth from authorized context)
     raw_answer, initial_citations = ResponseParser.parse_response(
@@ -392,4 +396,3 @@ def submit_feedback(
         }
     )
     return {"status": "recorded", "message_id": req.message_id}
-
