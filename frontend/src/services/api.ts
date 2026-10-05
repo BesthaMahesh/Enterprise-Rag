@@ -105,9 +105,10 @@ export const api = {
     return handleResponse<{ message: string }>(res);
   },
 
-  async getMe() {
-    const res = await fetch(`${API_BASE}/auth/me`, {
+  async getMe(signal?: AbortSignal) {
+    const res = await window.fetch(`${API_BASE}/auth/me`, {
       headers: { ...getAuthHeader() },
+      signal,
     });
     return handleResponse<User>(res);
   },

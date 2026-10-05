@@ -5,7 +5,7 @@ from backend.guardrails.citation import CitationValidator
 from backend.guardrails.pii import PIIDetector
 from backend.schemas.chat import SourceCitation
 from backend.acl.service import acl_service
-from backend.llm.prompts import INSUFFICIENT_KNOWLEDGE_FALLBACK
+from backend.llm.prompts import ACCESS_DENIED_FALLBACK, INSUFFICIENT_KNOWLEDGE_FALLBACK
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ class OutputGuardrail:
         # 5. If context was empty or insufficient and answer attempted to hallucinate
         if len(authorized_chunks) == 0:
             lower_ans = answer.lower()
-            if "salary" in lower_ans or "payroll" in lower_ans:
-                sanitized_answer = "I don't have access to your personal payroll information through this assistant."
+            if "sorry, you don't have permission to access this information" in lower_ans:
+                sanitized_answer = answer
             elif any(g in lower_ans for g in ["hello", "how can i help", "how can i assist", "cannot fulfill", "security instructions"]):
                 sanitized_answer = answer
             elif (
@@ -51,8 +51,6 @@ class OutputGuardrail:
                 or "unable to verify this information" in lower_ans
             ):
                 sanitized_answer = answer
-            elif user_role == "EMPLOYEE" and any(w in lower_ans for w in ["budget", "revenue", "restricted", "confidential"]):
-                sanitized_answer = "I'm sorry, I don't have access to that information."
             else:
                 sanitized_answer = answer if answer else INSUFFICIENT_KNOWLEDGE_FALLBACK
             sanitized_citations = []
@@ -75,6 +73,7 @@ class OutputGuardrail:
             "couldn't find sufficient",
             "unable to verify this information from the available company documents",
             "don't have access to that information",
+            "sorry, you don't have permission to access this information",
             "don't have access to your personal payroll",
             "cannot fulfill requests that attempt to override",
             "temporarily unavailable",

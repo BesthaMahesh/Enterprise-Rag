@@ -22,6 +22,7 @@ class ACLEvaluator:
             # If query expected denial, passed = no unauthorized retrieval occurred
             passed = unauthorized_retrievals == 0 and (
                 actual_decision == "DENY" or
+                "don't have permission" in answer.lower() or
                 "don't have access" in answer.lower() or
                 "couldn't find" in answer.lower() or
                 "unable to verify this information" in answer.lower() or

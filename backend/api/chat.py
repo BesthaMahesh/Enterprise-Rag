@@ -26,6 +26,8 @@ from backend.reranking.reranker import Reranker
 from backend.context.builder import ContextBuilder
 from backend.llm.client import llm_client
 from backend.llm.prompts import (
+    ACCESS_DENIED_FALLBACK,
+    get_access_denied_message,
     INSUFFICIENT_KNOWLEDGE_FALLBACK,
     SYSTEM_PROMPT,
     USER_PROMPT_TEMPLATE,
@@ -78,6 +80,7 @@ def chat_endpoint(
     retrieval_latency_ms = 0.0
     llm_latency_ms = 0.0
     llm_tokens = 0
+    access_denied = False
 
     if is_injection:
         AuditLogger.log_event(
@@ -113,53 +116,55 @@ def chat_endpoint(
         fused_res = retrieval_data.get("fused_results", [])
         reranked_res = retrieval_data.get("reranked_results", [])
         final_candidates = retrieval_data.get("final_candidates", [])
+        access_denied = retrieval_data.get("access_denied", False)
+        restricted_contact = retrieval_data.get("restricted_contact", "Finance")
 
-        # Post-reranking relevance validation & abstention
-        is_relevant, relevant_candidates, top_rerank_score = Reranker.validate_relevance(
-            query=raw_query,
-            candidates=final_candidates,
-            threshold=settings.RERANKER_RELEVANCE_THRESHOLD
-        )
-
-        if not is_relevant:
-            logger.info(
-                f"Query relevance validation abstained: top score {top_rerank_score:.3f} < threshold {settings.RERANKER_RELEVANCE_THRESHOLD:.3f}"
-            )
-            raw_llm_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
+        if access_denied:
+            # Do not construct context, invoke the LLM, or emit citations when a
+            # matching resource is outside the authenticated user's permissions.
+            final_candidates = []
+            raw_llm_answer = get_access_denied_message(restricted_contact)
         else:
-            # 3. Context Construction
-            context_str, authorized_context_chunks = ContextBuilder.build_context(
+            # Post-reranking relevance validation & abstention
+            is_relevant, relevant_candidates, top_rerank_score = Reranker.validate_relevance(
                 query=raw_query,
-                raw_candidates=relevant_candidates,
-                user_role=current_user.role,
-                max_tokens=settings.MAX_CONTEXT_TOKENS
+                candidates=final_candidates,
+                threshold=settings.RERANKER_RELEVANCE_THRESHOLD
             )
 
-            # 4. LLM Generation
-            t_llm_start = time.perf_counter()
-            if len(authorized_context_chunks) > 0:
-                messages = [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": USER_PROMPT_TEMPLATE.format(
-                        context=context_str,
-                        user_role=current_user.role,
-                        query=raw_query
-                    )}
-                ]
-                try:
-                    raw_llm_answer, llm_latency_ms, llm_tokens = llm_client.generate_response(messages)
-                except Exception as e:
-                    logger.error(f"LLM generation failed [req={req_id}, trace={trc_id}]: {e}")
-                    raw_llm_answer = "AI service is temporarily unavailable. Please try again."
-                    authorized_context_chunks = []
+            if not is_relevant:
+                logger.info(
+                    f"Query relevance validation abstained: top score {top_rerank_score:.3f} < threshold {settings.RERANKER_RELEVANCE_THRESHOLD:.3f}"
+                )
+                raw_llm_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
             else:
-                llm_latency_ms = 0.0
-                lower_q = raw_query.lower()
-                if "salary" in lower_q or "payroll" in lower_q or "compensation" in lower_q or "my pay" in lower_q:
-                    raw_llm_answer = "I don't have access to your personal payroll information through this assistant."
-                elif current_user.role == "EMPLOYEE" and query_class in ["FINANCE", "RESTRICTED", "HR"]:
-                    raw_llm_answer = "I'm sorry, I don't have access to that information."
+                # 3. Context Construction
+                context_str, authorized_context_chunks = ContextBuilder.build_context(
+                    query=raw_query,
+                    raw_candidates=relevant_candidates,
+                    user_role=current_user.role,
+                    max_tokens=settings.MAX_CONTEXT_TOKENS
+                )
+
+                # 4. LLM Generation
+                t_llm_start = time.perf_counter()
+                if len(authorized_context_chunks) > 0:
+                    messages = [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": USER_PROMPT_TEMPLATE.format(
+                            context=context_str,
+                            user_role=current_user.role,
+                            query=raw_query
+                        )}
+                    ]
+                    try:
+                        raw_llm_answer, llm_latency_ms, llm_tokens = llm_client.generate_response(messages)
+                    except Exception as e:
+                        logger.error(f"LLM generation failed [req={req_id}, trace={trc_id}]: {e}")
+                        raw_llm_answer = "AI service is temporarily unavailable. Please try again."
+                        authorized_context_chunks = []
                 else:
+                    llm_latency_ms = 0.0
                     raw_llm_answer = INSUFFICIENT_KNOWLEDGE_FALLBACK
 
     # Parse Citations (Single source-of-truth from authorized context)
@@ -181,11 +186,12 @@ def chat_endpoint(
     total_latency_ms = (time.perf_counter() - start_time) * 1000
 
     # ACL decision outcome
-    if is_injection:
+    if is_injection or access_denied:
         acl_decision = "DENIED"
-        guardrail_decision = "BLOCKED"
+        if is_injection:
+            guardrail_decision = "BLOCKED"
     else:
-        acl_decision = "ALLOWED" if len(authorized_context_chunks) > 0 else "DENIED"
+        acl_decision = "ALLOWED"
 
     # Cost Tracking
     context_tokens = len(context_str.split()) * 4 // 3
@@ -292,7 +298,11 @@ def chat_endpoint(
         resource=f"Conversation:{conv_id}",
         query=PIIDetector.sanitize_for_logging(raw_query),
         acl_decision=acl_decision,
-        reason="Authorized search executed" if acl_decision == "ALLOWED" else "No authorized documents matched query",
+        reason=(
+            "Access blocked by document policy" if access_denied
+            else "Authorized search executed" if acl_decision == "ALLOWED"
+            else "Security policy blocked request"
+        ),
         latency_ms=total_latency_ms,
         request_id=req_id,
         trace_id=trc_id,

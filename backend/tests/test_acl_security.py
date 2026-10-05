@@ -1,6 +1,8 @@
 import pytest
+from rank_bm25 import BM25Okapi
 from backend.acl.service import acl_service
 from backend.context.builder import ContextBuilder
+from backend.retrieval.sparse import SparseRetriever, tokenize_text
 
 
 def test_acl_document_authorization():
@@ -118,4 +120,44 @@ def test_acl_pre_retrieval_regression():
     is_auth, reason = acl_service.evaluate_chunk_access("ADMIN", admin_only_doc)
     assert is_auth is True
     assert reason == "AUTHORIZED"
+
+
+def test_retrieval_reports_private_denial_signal_for_restricted_match():
+    retriever = SparseRetriever(index_path="missing-test-index.pkl")
+    retriever.corpus_chunks = [
+        {
+            "chunk_id": "leave-1",
+            "document_id": "documents_employee_accessible_leave_policy",
+            "content": "Employees can submit an annual leave request through the portal.",
+            "classification": "INTERNAL",
+            "allowed_roles": ["EMPLOYEE", "HR", "FINANCE", "ADMIN"],
+        },
+        {
+            "chunk_id": "payroll-1",
+            "document_id": "documents_hr_private_payroll_summary_2026",
+            "content": "Monthly payroll cost and compensation breakdown for the current year.",
+            "classification": "CONFIDENTIAL",
+            "allowed_roles": ["HR", "FINANCE", "ADMIN"],
+        },
+        {
+            "chunk_id": "admin-1",
+            "document_id": "documents_admin_restricted_executive_compensation",
+            "content": "Executive compensation governance and board committee oversight details.",
+            "classification": "HIGHLY_RESTRICTED",
+            "allowed_roles": ["ADMIN"],
+        },
+    ]
+    retriever.bm25 = BM25Okapi([tokenize_text(chunk["content"]) for chunk in retriever.corpus_chunks])
+
+    denied, contact = retriever.check_unauthorized_match("What is the monthly payroll cost?", "EMPLOYEE")
+    assert denied is True
+    assert contact == "Finance"
+
+    denied, contact = retriever.check_unauthorized_match("What is executive compensation governance?", "EMPLOYEE")
+    assert denied is True
+    assert contact == "Admin"
+
+    assert retriever.has_unauthorized_match("What is the monthly payroll cost?", "EMPLOYEE") is True
+    assert retriever.has_unauthorized_match("What is the monthly payroll cost?", "FINANCE") is False
+    assert retriever.has_unauthorized_match("How do I submit annual leave?", "EMPLOYEE") is False
 

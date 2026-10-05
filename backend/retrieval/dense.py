@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
 import faiss
 from backend.embeddings.generator import EmbeddingGenerator
@@ -86,3 +86,41 @@ class DenseRetriever:
                 break
 
         return results
+
+    def check_unauthorized_match(self, query: str, user_role: str) -> Tuple[bool, Optional[str]]:
+        """Dense semantic check for unauthorized match when user lacks permissions."""
+        if self.index is None or len(self.chunks_metadata) == 0:
+            return False, None
+
+        try:
+            query_vec = EmbeddingGenerator.generate_query_embedding(query)
+            query_vec = np.expand_dims(query_vec, axis=0).astype(np.float32)
+        except Exception:
+            return False, None
+
+        fetch_k = min(self.index.ntotal, 20)
+        distances, indices = self.index.search(query_vec, fetch_k)
+
+        best_score = 0.0
+        best_unauthorized_score = 0.0
+        matched_chunk = None
+
+        for dist, idx in zip(distances[0], indices[0]):
+            if idx < 0 or idx >= len(self.chunks_metadata):
+                continue
+            score = float(dist)
+            best_score = max(best_score, score)
+            chunk_meta = self.chunks_metadata[idx]
+            if not acl_service.is_chunk_authorized(user_role, chunk_meta):
+                if score > best_unauthorized_score:
+                    best_unauthorized_score = score
+                    matched_chunk = chunk_meta
+
+        # Leading restricted match with high cosine similarity
+        if best_unauthorized_score >= 0.55 and best_unauthorized_score >= best_score * 0.85:
+            from backend.retrieval.sparse import SparseRetriever
+            contact = SparseRetriever._resolve_contact(query, matched_chunk)
+            return True, contact
+
+        return False, None
+

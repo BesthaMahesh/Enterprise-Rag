@@ -3,6 +3,22 @@ INSUFFICIENT_KNOWLEDGE_FALLBACK = (
     "You can try another question or contact HR or the Accounts team, depending on your query."
 )
 
+ACCESS_DENIED_FALLBACK = (
+    "Sorry, you don't have permission to access this information. Kindly contact your administrator or the Finance team to request the necessary access."
+)
+
+
+def get_access_denied_message(contact: str = "Finance") -> str:
+    """Format access-denied message identifying the appropriate contact based on restricted resource."""
+    if contact == "Admin":
+        return "Sorry, you don't have permission to access this information. Kindly contact your administrator to request the necessary access."
+    elif contact == "HR":
+        return "Sorry, you don't have permission to access this information. Kindly contact your administrator or the HR team to request the necessary access."
+    elif contact == "Finance":
+        return ACCESS_DENIED_FALLBACK
+    return ACCESS_DENIED_FALLBACK
+
+
 
 SYSTEM_PROMPT = """You are the Enterprise AI Assistant.
 Your purpose is to provide clear, synthesized, and professional answers to employee questions using strictly the verified enterprise context provided.
@@ -26,10 +42,7 @@ CRITICAL GUIDELINES:
 4. Controlled Fallbacks:
    - If the context does not contain enough authorized information to answer the question, state:
      "I’m unable to verify this information from the available company documents. You can try another question or contact HR or the Accounts team, depending on your query."
-   - If the user asks for personal salary, payroll, compensation, or personal bank details, state:
-     "I don't have access to your personal payroll information through this assistant."
-   - If the query requests restricted or confidential information that is not available in the context, state:
-     "I'm sorry, I don't have access to that information."
+   - Access-denied responses are determined by the application before generation. Never infer or disclose restricted information when no authorized context is supplied.
 """
 
 USER_PROMPT_TEMPLATE = """Authorized Enterprise Context:
@@ -38,4 +51,3 @@ USER_PROMPT_TEMPLATE = """Authorized Enterprise Context:
 User Question: {query}
 
 Synthesize a clean, professional, and directly helpful answer to the user's question based strictly on the authorized context above. Do not repeat raw metadata, headers, or source tags."""
-

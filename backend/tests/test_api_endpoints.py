@@ -86,6 +86,30 @@ def test_chat_authorized_employee():
     assert "conversation_id" in data
 
 
+def test_chat_access_denied_payroll_for_employee():
+    # Login as employee
+    login_res = client.post("/api/auth/login", json={
+        "email": "employee@acme.local",
+        "password": settings.DEFAULT_EMPLOYEE_PASSWORD
+    })
+    token = login_res.json()["access_token"]
+
+    response = client.post(
+        "/api/chat",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"query": "What is the monthly payroll cost and breakdown in the Payroll Summary?"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    expected_msg = (
+        "Sorry, you don't have permission to access this information. "
+        "Kindly contact your administrator or the Finance team to request the necessary access."
+    )
+    assert data["answer"] == expected_msg
+    assert data.get("sources") == []
+
+
+
 def test_public_registration_is_unavailable():
     response = client.post("/api/auth/register", json={
         "email": "newhire@acme.local",

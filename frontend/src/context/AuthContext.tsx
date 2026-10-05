@@ -16,21 +16,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return saved ? JSON.parse(saved) : null;
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    const storedToken = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    // If we already have stored token and user profile, session is instantly available
+    // Only display blocking loader if token exists but user profile must be fetched
+    return !!storedToken && !savedUser;
+  });
 
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const userData = await api.getMe();
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+          const userData = await api.getMe(controller.signal);
+          clearTimeout(timeoutId);
           setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
-        } catch {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setToken(null);
-          setUser(null);
+        } catch (err: any) {
+          // Only clear session if explicitly unauthenticated (401 / expired)
+          const msg = (err?.message || '').toLowerCase();
+          if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('session expired') || msg.includes('credentials')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setIsLoading(false);

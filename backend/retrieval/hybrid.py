@@ -30,6 +30,17 @@ class HybridRetriever:
         k_rerank = top_k_rerank or settings.TOP_K_RERANK
         k_final = final_k or settings.FINAL_CONTEXT_K
 
+        # The retrieval result remains ACL-filtered. This private signal and contact
+        # are the only indication that a leading matching record was withheld, allowing
+        # the API to return a safe denial rather than an insufficient-evidence fallback.
+        access_denied_sparse, contact_sparse = self.sparse.check_unauthorized_match(query, user_role)
+        access_denied_dense, contact_dense = (False, None)
+        if not getattr(settings, "LOW_MEMORY_MODE", False):
+            access_denied_dense, contact_dense = self.dense.check_unauthorized_match(query, user_role)
+
+        access_denied = access_denied_sparse or access_denied_dense
+        restricted_contact = contact_sparse or contact_dense or "Finance"
+
         # Low memory mode bypasses PyTorch to guarantee operation under 100MB RAM
         if getattr(settings, "LOW_MEMORY_MODE", False):
             sparse_results = self.sparse.search(query, user_role=user_role, top_k=k_final)
@@ -43,7 +54,9 @@ class HybridRetriever:
                 "sparse_results": sparse_results,
                 "fused_results": sparse_results,
                 "reranked_results": sparse_results,
-                "final_candidates": sparse_results
+                "final_candidates": sparse_results,
+                "access_denied": access_denied,
+                "restricted_contact": restricted_contact if access_denied else None,
             }
 
         # Step 1: Run Dense Retrieval (ACL filtered)
@@ -75,5 +88,7 @@ class HybridRetriever:
             "sparse_results": sparse_results,
             "fused_results": fused_candidates,
             "reranked_results": reranked_results,
-            "final_candidates": final_candidates
+            "final_candidates": final_candidates,
+            "access_denied": access_denied,
+            "restricted_contact": restricted_contact if access_denied else None,
         }

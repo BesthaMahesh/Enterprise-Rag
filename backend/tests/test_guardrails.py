@@ -4,7 +4,11 @@ from backend.guardrails.pii import PIIDetector
 from backend.guardrails.grounding import GroundingValidator
 from backend.guardrails.input_guardrail import InputGuardrail
 from backend.guardrails.output_guardrail import OutputGuardrail
-from backend.llm.prompts import INSUFFICIENT_KNOWLEDGE_FALLBACK
+from backend.llm.prompts import (
+    ACCESS_DENIED_FALLBACK,
+    get_access_denied_message,
+    INSUFFICIENT_KNOWLEDGE_FALLBACK,
+)
 from backend.schemas.chat import SourceCitation
 
 
@@ -120,3 +124,23 @@ def test_output_guardrail_returns_professional_fallback_without_context():
 
     assert sanitized == INSUFFICIENT_KNOWLEDGE_FALLBACK
     assert citations == []
+
+
+def test_output_guardrail_returns_exact_access_denied_message_without_sources():
+    exact_msg = "Sorry, you don't have permission to access this information. Kindly contact your administrator or the Finance team to request the necessary access."
+    assert ACCESS_DENIED_FALLBACK == exact_msg
+    assert get_access_denied_message("Finance") == exact_msg
+    assert get_access_denied_message("Admin") == "Sorry, you don't have permission to access this information. Kindly contact your administrator to request the necessary access."
+    assert get_access_denied_message("HR") == "Sorry, you don't have permission to access this information. Kindly contact your administrator or the HR team to request the necessary access."
+
+    for msg in [exact_msg, get_access_denied_message("Admin"), get_access_denied_message("HR")]:
+        sanitized, citations, _, _ = OutputGuardrail.validate_and_sanitize_output(
+            answer=msg,
+            citations=[],
+            context_str="",
+            user_role="EMPLOYEE",
+            authorized_chunks=[],
+        )
+        assert sanitized == msg
+        assert citations == []
+
